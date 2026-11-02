@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>바이브 코딩 실행기</title>
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#ffffff; --line:#d9dce1; --text:#1d2129; --sub:#5d6470;
+  --primary:#2f6fde; --primary-text:#fff; --go:#14935b; --go-text:#fff;
+  --err:#c62f2f; --err-bg:#fdecec; --code-bg:#fbfbfc; --chip:#eef1f5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171b; --panel:#1e2127; --line:#343841; --text:#e8eaee; --sub:#a0a6b1;
+    --primary:#4d86ea; --go:#1fa86b; --err:#ff6b6b; --err-bg:#3a1f22; --code-bg:#181a1f; --chip:#2a2e36;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171b; --panel:#1e2127; --line:#343841; --text:#e8eaee; --sub:#a0a6b1;
+  --primary:#4d86ea; --go:#1fa86b; --err:#ff6b6b; --err-bg:#3a1f22; --code-bg:#181a1f; --chip:#2a2e36;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR","Malgun Gothic",sans-serif;display:flex;flex-direction:column;-webkit-tap-highlight-color:transparent}
+button,select,input{font:inherit;color:inherit}
+button{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;white-space:nowrap}
+button:active{transform:scale(.97)}
+button.primary{background:var(--primary);color:var(--primary-text);border-color:var(--primary);font-weight:600}
+button.go{background:var(--go);color:var(--go-text);border-color:var(--go);font-weight:700;padding:0 20px}
+select,input[type=text]{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 10px}
+
+.bar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{font-weight:700;margin-right:auto}
+.tabs{display:flex;background:var(--chip);border-radius:12px;padding:3px}
+.tabs button{border:0;background:transparent;min-height:38px}
+.tabs button[aria-selected=true]{background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+
+main{flex:1;display:flex;gap:10px;padding:10px 16px 16px;min-height:0}
+.pane{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+main.view-code #runPane, main.view-run #codePane{display:none}
+.tools{display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+.tools .sep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
+#name{width:140px}
+textarea{flex:1;width:100%;border:0;outline:0;resize:none;padding:12px;background:var(--code-bg);color:var(--text);font:14px/1.5 ui-monospace,"D2Coding",Consolas,monospace;tab-size:2}
+textarea::placeholder{color:var(--sub);font-family:system-ui,sans-serif;font-size:16px;line-height:1.7}
+.status{padding:6px 12px;font-size:13px;color:var(--sub);border-top:1px solid var(--line)}
+
+#stage{position:relative;flex:1;min-height:0;background:#fff}
+#frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;touch-action:manipulation}
+#stage.pseudo-fs{position:fixed;inset:0;z-index:50}
+#exitFs{position:absolute;top:8px;right:8px;z-index:3;min-height:36px;padding:0 12px;background:rgba(0,0,0,.55);color:#fff;border:0;border-radius:18px;font-size:14px}
+#rotateHint{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(10,12,16,.88);color:#fff;font-size:22px;text-align:center;padding:16px}
+#rotateHint .icon{font-size:56px}
+[hidden]{display:none !important}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#888;font-size:17px;text-align:center;padding:16px;pointer-events:none}
+
+#errBadge{margin-left:auto;background:var(--err);color:#fff;border-color:var(--err);font-weight:600}
+#errPanel{max-height:40%;overflow:auto;background:var(--err-bg);border-top:2px solid var(--err)}
+.errhead{display:flex;gap:8px;align-items:center;padding:8px;flex-wrap:wrap;position:sticky;top:0;background:var(--err-bg)}
+.errhead strong{color:var(--err);margin-right:auto}
+#errList{margin:0;padding:0 12px 12px 34px;font:13px/1.5 ui-monospace,Consolas,monospace}
+#errList li{margin:4px 0}
+#errList .snip{display:block;color:var(--sub)}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:100;max-width:calc(100% - 32px);text-align:center}
+#toast.show{opacity:1}
+
+dialog{border:0;border-radius:16px;padding:0;max-width:640px;width:calc(100% - 32px);background:var(--panel);color:var(--text)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.dlg{padding:20px 22px;max-height:80vh;overflow:auto;line-height:1.65}
+.dlg h2{margin:0 0 10px;font-size:20px}
+.dlg ol{padding-left:22px;margin:8px 0}
+.dlg li{margin:6px 0}
+.dlg .foot{display:flex;justify-content:flex-end;padding:12px 22px;border-top:1px solid var(--line)}
+
+@media (max-width:700px){ main{padding:8px} .bar{padding:8px} #name{width:110px} }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">바이브 코딩 실행기</div>
+  <div class="tabs" role="tablist">
+    <button data-view="code" role="tab">코드</button>
+    <button data-view="split" role="tab">나란히</button>
+    <button data-view="run" role="tab">실행 화면</button>
+  </div>
+  <button id="helpBtn">사용법</button>
+</header>
+
+<main id="main" class="view-code">
+  <section id="codePane" class="pane">
+    <div class="tools">
+      <button id="pasteBtn" class="primary">붙여넣기</button>
+      <button id="runBtn" class="go">▶ 실행</button>
+      <span class="sep"></span>
+      <input id="name" type="text" placeholder="작품 이름" maxlength="30">
+      <select id="slotSel" aria-label="저장칸"></select>
+      <button id="saveBtn">저장</button>
+      <button id="loadBtn">불러오기</button>
+      <span class="sep"></span>
+      <button id="promptBtn">요청 문장 복사</button>
+      <button id="copyCodeBtn">코드 복사</button>
+      <button id="dlBtn">파일로 받기</button>
+      <button id="clearBtn">지우기</button>
+    </div>
+    <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
+      placeholder="① AI에게 받은 답변을 복사하세요 (설명 글이 섞여 있어도 괜찮아요)&#10;② 위의 [붙여넣기] 버튼을 누르세요&#10;③ [▶ 실행]을 누르면 바로 실행됩니다"></textarea>
+    <div class="status" id="status">작성 중인 코드는 이 태블릿에 자동으로 보관됩니다.</div>
+  </section>
+
+  <section id="runPane" class="pane">
+    <div class="tools">
+      <button id="rerunBtn" class="go">↻ 다시 실행</button>
+      <button id="fsBtn" class="primary">전체화면</button>
+      <button id="errBadge" hidden></button>
+    </div>
+    <div id="stage">
+      <iframe id="frame" title="실행 화면" sandbox="allow-scripts allow-modals allow-forms allow-pointer-lock allow-popups"></iframe>
+      <div class="empty" id="empty">아직 실행한 코드가 없어요.<br>코드 탭에서 붙여넣고 [▶ 실행]을 누르세요.</div>
+      <div id="rotateHint" hidden>
+        <div class="icon">⟳</div>
+        <div>태블릿을 가로로 돌려주세요</div>
+        <button id="rotateOk">이대로 볼게요</button>
+      </div>
+      <button id="exitFs" hidden>✕ 나가기</button>
+    </div>
+    <div id="errPanel" hidden>
+      <div class="errhead">
+        <strong id="errTitle">오류</strong>
+        <button id="copyErrBtn" class="primary">오류 복사 → AI에게 붙여넣기</button>
+        <button id="closeErr">닫기</button>
+      </div>
+      <ol id="errList"></ol>
+    </div>
+  </section>
+</main>
+
+<dialog id="help">
+  <div class="dlg">
+    <h2>사용법</h2>
+    <ol>
+      <li><b>[요청 문장 복사]</b>를 누르고, AI에게 만들고 싶은 것을 쓴 뒤 그 아래에 붙여넣으세요. 태블릿에서 잘 돌아가게 하는 조건이 들어 있어요.</li>
+      <li>AI 답변을 통째로 복사해서 <b>[붙여넣기]</b>를 누르세요. 설명 글은 실행기가 알아서 빼고 코드만 꺼냅니다.</li>
+      <li><b>[▶ 실행]</b>을 누르세요. 게임은 <b>[전체화면]</b>으로 하면 더 넓게 볼 수 있어요.</li>
+      <li>빨간 오류가 뜨면 <b>[오류 복사]</b>를 눌러 AI에게 그대로 붙여넣으세요.</li>
+      <li>오류는 없는데 이상하면, AI에게 <b>"무엇을 했더니 → 어떻게 됐는데 → 어떻게 되길 원해"</b> 순서로 말하세요.</li>
+      <li>잘 돌아갈 때마다 <b>[저장]</b>해 두세요. 고치다 망가지면 <b>[불러오기]</b>로 돌아올 수 있어요.</li>
+    </ol>
+    <p style="color:var(--sub);font-size:14px;margin:8px 0 0">저장칸은 이 태블릿의 이 브라우저에만 남습니다. 제출은 [코드 복사]로 해 주세요.</p>
+  </div>
+  <div class="foot"><button id="helpClose" class="primary">닫기</button></div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var main=$('main'), codeEl=$('code'), frame=$('frame'), stage=$('stage');
+var SLOTS=5, KEY='vibeRunner.';
+
+/* ---------- 저장소(실패해도 동작) ---------- */
+function sget(k){ try{ return localStorage.getItem(KEY+k); }catch(e){ return null; } }
+function sset(k,v){ try{ localStorage.setItem(KEY+k,v); return true; }catch(e){ return false; } }
+
+/* ---------- 토스트 ---------- */
+var toastTimer;
+function toast(msg){ var t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove('show');},2200); }
+
+/* ---------- 클립보드 ---------- */
+function copyText(text, okMsg){
+  function fallback(){
+    var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); var ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta); toast(ok?okMsg:'복사하지 못했어요. 직접 선택해서 복사해 주세요.');
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast(okMsg); }, fallback);
+  } else fallback();
+}
+
+/* ---------- 보기 전환 ---------- */
+function setView(v){
+  main.className='view-'+v;
+  document.querySelectorAll('.tabs button').forEach(function(b){ b.setAttribute('aria-selected', b.dataset.view===v); });
+  sset('view', v);
+}
+document.querySelectorAll('.tabs button').forEach(function(b){ b.onclick=function(){ setView(b.dataset.view); }; });
+
+/* ---------- AI 답변에서 코드 꺼내기 ---------- */
+function extract(raw){
+  var re=/```([\w+-]*)[^\n]*\n([\s\S]*?)```/g, m, blocks=[];
+  while((m=re.exec(raw))) blocks.push({lang:(m[1]||'').toLowerCase(), body:m[2]});
+  if(!blocks.length){
+    // 닫는 ``` 없이 끊긴 경우
+    var open=raw.match(/```[\w+-]*[^\n]*\n([\s\S]*)$/);
+    if(open) return open[1].trim();
+    return raw.trim();
+  }
+  var html=null;
+  for(var i=0;i<blocks.length;i++){ if(blocks[i].lang==='html'||/<!doctype|<html|<body/i.test(blocks[i].body)){ html=blocks[i]; break; } }
+  var css=blocks.filter(function(b){return b.lang==='css';}).map(function(b){return b.body;}).join('\n');
+  var js=blocks.filter(function(b){return b.lang==='js'||b.lang==='javascript';}).map(function(b){return b.body;}).join('\n');
+  if(!html && !css && !js) return blocks[0].body.trim();
+  var out=html?html.body:'<!doctype html>\n<html><head><meta charset="utf-8"></head><body>\n</body></html>';
+  if(css){ var st='<style>\n'+css+'\n</style>\n'; out=/<\/head>/i.test(out)?out.replace(/<\/head>/i, st+'</head>'):st+out; }
+  if(js){ var sc='<script>\n'+js+'\n<\/script>\n'; out=/<\/body>/i.test(out)?out.replace(/<\/body>(?![\s\S]*<\/body>)/i, sc+'</body>'):out+'\n'+sc; }
+  return out.trim();
+}
+
+/* ---------- 실행 화면에 심는 감시 코드(줄바꿈 없음 → 줄 번호 유지) ---------- */
+var PREFIX='<script>(function(){'+
+ 'var send=function(t,m,l){try{parent.postMessage({__vibe:1,type:t,msg:String(m),line:l||0},"*")}catch(e){}};'+
+ 'window.addEventListener("error",function(e){var tg=e.target;if(tg&&tg!==window&&(tg.src||tg.href)){send("res","불러오지 못한 파일: "+(tg.src||tg.href));return;}send("err",e.message,e.lineno)},true);'+
+ 'window.addEventListener("unhandledrejection",function(e){var r=e.reason;send("err",(r&&r.message)||r)});'+
+ 'var ce=console.error;console.error=function(){send("log",Array.prototype.map.call(arguments,String).join(" "));try{ce.apply(console,arguments)}catch(_){}};'+
+ 'var mem=function(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}};'+
+ '["localStorage","sessionStorage"].forEach(function(n){try{window[n].length}catch(e){try{Object.defineProperty(window,n,{value:mem(),configurable:true})}catch(_){}}});'+
+ 'document.addEventListener("gesturestart",function(e){e.preventDefault()});'+
+ '})();<\/script>';
+
+function withPrefix(code){
+  var m;
+  if((m=code.match(/<head[^>]*>/i))) return code.slice(0,m.index+m[0].length)+PREFIX+code.slice(m.index+m[0].length);
+  if((m=code.match(/<html[^>]*>/i))) return code.slice(0,m.index+m[0].length)+PREFIX+code.slice(m.index+m[0].length);
+  if((m=code.match(/<!doctype[^>]*>/i))) return code.slice(0,m.index+m[0].length)+PREFIX+code.slice(m.index+m[0].length);
+  return PREFIX+code;
+}
+
+/* ---------- 실행 ---------- */
+var errors=[], lastCode='';
+function run(){
+  var raw=codeEl.value;
+  if(!raw.trim()){ toast('코드를 먼저 붙여넣어 주세요.'); return; }
+  var code=extract(raw);
+  if(code!==raw.trim()){ codeEl.value=code; saveDraft(); toast('AI 답변에서 코드만 꺼냈어요.'); }
+  lastCode=code; clearErrors();
+  frame.srcdoc=withPrefix(code);
+  $('empty').hidden=true;
+  if(main.className==='view-code') setView('run');
+}
+function rerun(){ if(lastCode){ clearErrors(); frame.srcdoc=withPrefix(lastCode); } else run(); }
+$('runBtn').onclick=run;
+$('rerunBtn').onclick=rerun;
+
+/* ---------- 오류 표시 ---------- */
+function clearErrors(){ errors=[]; renderErrors(); $('errPanel').hidden=true; }
+function renderErrors(){
+  var list=$('errList'); list.innerHTML='';
+  var lines=lastCode.split('\n');
+  errors.forEach(function(e){
+    var li=document.createElement('li');
+    li.textContent=(e.line?e.line+'번째 줄: ':'')+e.msg;
+    if(e.line && lines[e.line-1]){ var s=document.createElement('span'); s.className='snip'; s.textContent='→ '+lines[e.line-1].trim().slice(0,120); li.appendChild(s); }
+    list.appendChild(li);
+  });
+  var b=$('errBadge');
+  if(errors.length){ b.hidden=false; b.textContent='오류 '+errors.length+'개'; $('errTitle').textContent='오류 '+errors.length+'개가 났어요'; }
+  else b.hidden=true;
+}
+window.addEventListener('message',function(ev){
+  if(ev.source!==frame.contentWindow) return;
+  var d=ev.data; if(!d||!d.__vibe) return;
+  if(errors.length>=20) return;
+  var key=d.msg+'|'+d.line;
+  if(errors.some(function(e){return e.key===key;})) return;
+  errors.push({msg:d.msg, line:d.line, key:key});
+  renderErrors();
+  if(errors.length===1 && !isFs()) $('errPanel').hidden=false;
+});
+$('errBadge').onclick=function(){ $('errPanel').hidden=!$('errPanel').hidden; };
+$('closeErr').onclick=function(){ $('errPanel').hidden=true; };
+$('copyErrBtn').onclick=function(){
+  var lines=lastCode.split('\n');
+  var txt='내 코드를 실행했더니 아래 오류가 났어. 원인을 고쳐서 전체 코드를 다시 줘.\n'+
+    errors.map(function(e){ var s='- '+(e.line?e.line+'번째 줄: ':'')+e.msg; if(e.line&&lines[e.line-1]) s+='\n  (그 줄 코드: '+lines[e.line-1].trim().slice(0,120)+')'; return s; }).join('\n');
+  copyText(txt,'오류를 복사했어요. AI에게 붙여넣으세요.');
+};
+
+/* ---------- 전체화면 + 가로 ---------- */
+var rotateDismissed=false;
+function isFs(){ return document.fullscreenElement===stage || stage.classList.contains('pseudo-fs'); }
+function updateFs(){
+  var fs=isFs();
+  $('exitFs').hidden=!fs;
+  var portrait=window.matchMedia('(orientation: portrait)').matches;
+  $('rotateHint').hidden=!(fs && portrait && !rotateDismissed);
+}
+function enterFs(){
+  if(!lastCode){ toast('먼저 실행해 주세요.'); return; }
+  rotateDismissed=false;
+  var done=function(){ updateFs(); setTimeout(rerun,350); }; // 커진 화면 크기로 다시 시작
+  if(stage.requestFullscreen){
+    stage.requestFullscreen({navigationUI:'hide'}).then(function(){
+      if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('landscape').catch(function(){}); }
+      done();
+    }).catch(function(){ stage.classList.add('pseudo-fs'); done(); });
+  } else { stage.classList.add('pseudo-fs'); done(); }
+}
+function exitFs(){
+  try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+  if(document.fullscreenElement) document.exitFullscreen().catch(function(){});
+  stage.classList.remove('pseudo-fs'); updateFs();
+}
+$('fsBtn').onclick=enterFs;
+$('exitFs').onclick=exitFs;
+$('rotateOk').onclick=function(){ rotateDismissed=true; updateFs(); };
+document.addEventListener('fullscreenchange',updateFs);
+window.addEventListener('resize',updateFs);
+
+/* ---------- 붙여넣기 ---------- */
+$('pasteBtn').onclick=function(){
+  if(navigator.clipboard && navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(t){
+      if(!t||!t.trim()){ toast('복사된 내용이 없어요. AI 답변을 먼저 복사하세요.'); return; }
+      var c=extract(t); codeEl.value=c; saveDraft();
+      toast(c!==t.trim()?'붙여넣고 코드만 꺼냈어요. [▶ 실행]을 누르세요.':'붙여넣었어요. [▶ 실행]을 누르세요.');
+    }, function(){ codeEl.focus(); toast('입력칸을 길게 눌러 [붙여넣기]를 선택하세요.'); });
+  } else { codeEl.focus(); toast('입력칸을 길게 눌러 [붙여넣기]를 선택하세요.'); }
+};
+
+/* ---------- 임시 보관(자동) ---------- */
+var draftTimer;
+function saveDraft(){ sset('draft',codeEl.value); sset('name',$('name').value); }
+codeEl.addEventListener('input',function(){ clearTimeout(draftTimer); draftTimer=setTimeout(saveDraft,400); });
+$('name').addEventListener('input',saveDraft);
+
+/* ---------- 저장칸 ---------- */
+function slotData(i){ try{ return JSON.parse(sget('slot'+i)||'null'); }catch(e){ return null; } }
+function fmt(t){ var d=new Date(t); return (d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function renderSlots(){
+  var sel=$('slotSel'), cur=sel.value||'1'; sel.innerHTML='';
+  for(var i=1;i<=SLOTS;i++){
+    var d=slotData(i), o=document.createElement('option'); o.value=String(i);
+    o.textContent='저장칸 '+i+(d?' · '+(d.name||'이름없음')+' ('+fmt(d.t)+')':' · 비어 있음');
+    sel.appendChild(o);
+  }
+  sel.value=cur;
+}
+$('saveBtn').onclick=function(){
+  if(!codeEl.value.trim()){ toast('저장할 코드가 없어요.'); return; }
+  var i=$('slotSel').value, old=slotData(i);
+  if(old && !confirm('저장칸 '+i+'에 있는 "'+(old.name||'이름없음')+'"을(를) 덮어쓸까요?')) return;
+  var ok=sset('slot'+i, JSON.stringify({name:$('name').value.trim(), code:codeEl.value, t:Date.now()}));
+  renderSlots(); toast(ok?'저장칸 '+i+'에 저장했어요.':'이 브라우저에서는 저장할 수 없어요. [코드 복사]로 보관하세요.');
+};
+$('loadBtn').onclick=function(){
+  var i=$('slotSel').value, d=slotData(i);
+  if(!d){ toast('저장칸 '+i+'이(가) 비어 있어요.'); return; }
+  if(codeEl.value.trim() && codeEl.value!==d.code && !confirm('지금 코드 대신 저장칸 '+i+'을(를) 불러올까요?\n(지금 코드는 사라져요)')) return;
+  codeEl.value=d.code; $('name').value=d.name||''; saveDraft(); toast('불러왔어요. [▶ 실행]을 누르세요.');
+};
+
+/* ---------- 기타 ---------- */
+var PROMPT_TAIL=
+'\n\n[꼭 지켜야 할 조건]\n'+
+'- 갤럭시탭 크롬 브라우저에서 가로 화면으로 실행돼.\n'+
+'- 키보드와 마우스가 없어. 모든 조작은 터치로 해야 하고, 필요하면 화면에 손가락으로 누르기 좋은 큰 버튼을 만들어줘.\n'+
+'- HTML 파일 하나에 CSS와 자바스크립트를 모두 넣어줘. 외부 라이브러리, 외부 이미지·소리 파일은 쓰지 마. 그림은 도형이나 이모지로 그려줘.\n'+
+'- 화면 크기에 맞춰 꽉 차게 만들고, 스크롤이 생기지 않게 해줘. 화면 크기가 바뀌어도 다시 맞춰지게 해줘.\n'+
+'- 글자 입력칸이 필요하면 화면 위쪽에 둬.\n'+
+'- 설명은 짧게 하고, 코드는 생략 없이 전체를 한 번에 보여줘.';
+$('promptBtn').onclick=function(){ copyText('(여기에 만들고 싶은 것을 써요)'+PROMPT_TAIL,'요청 문장을 복사했어요. AI 입력창에 붙여넣고 맨 윗줄을 바꿔 쓰세요.'); };
+$('copyCodeBtn').onclick=function(){
+  if(!codeEl.value.trim()){ toast('복사할 코드가 없어요.'); return; }
+  copyText(codeEl.value,'코드를 복사했어요.');
+};
+$('dlBtn').onclick=function(){
+  if(!codeEl.value.trim()){ toast('받을 코드가 없어요.'); return; }
+  var name=($('name').value.trim()||'내작품').replace(/[\\/:*?"<>|]/g,'_');
+  var blob=new Blob([codeEl.value],{type:'text/html'}), a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name+'.html'; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+};
+$('clearBtn').onclick=function(){
+  if(!codeEl.value.trim()) return;
+  if(!confirm('코드를 모두 지울까요?\n(저장칸에 저장한 것은 남아 있어요)')) return;
+  codeEl.value=''; saveDraft(); codeEl.focus();
+};
+$('helpBtn').onclick=function(){ $('help').showModal(); };
+$('helpClose').onclick=function(){ $('help').close(); };
+
+/* ---------- 시작 ---------- */
+codeEl.value=sget('draft')||''; $('name').value=sget('name')||'';
+renderSlots();
+var wide=window.matchMedia('(min-width: 1000px)').matches;
+setView(sget('view')||(wide?'split':'code'));
+})();
+</script>
+</body>
+</html>
