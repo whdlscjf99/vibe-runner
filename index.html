@@ -27,6 +27,7 @@ button,select,input{font:inherit;color:inherit}
 button{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);cursor:pointer;white-space:nowrap}
 button:active{transform:scale(.97)}
 button.primary{background:var(--primary);color:var(--primary-text);border-color:var(--primary);font-weight:600}
+button.prompt{background:#7a4fd6;color:#fff;border-color:#7a4fd6;font-weight:700}
 button.go{background:var(--go);color:var(--go-text);border-color:var(--go);font-weight:700;padding:0 20px}
 select,input[type=text]{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 10px}
 
@@ -91,18 +92,19 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 <main id="main" class="view-code">
   <section id="codePane" class="pane">
     <div class="tools">
+      <button id="promptBtn" class="prompt">요청 문장 복사</button>
+      <span class="sep"></span>
       <button id="pasteBtn" class="primary">붙여넣기</button>
       <button id="runBtn" class="go">▶ 실행</button>
-      <span class="sep"></span>
+      <button id="clearBtn">초기화</button>
+    </div>
+    <div class="tools">
       <input id="name" type="text" placeholder="작품 이름" maxlength="30">
       <select id="slotSel" aria-label="저장칸"></select>
       <button id="saveBtn">저장</button>
       <button id="loadBtn">불러오기</button>
       <span class="sep"></span>
-      <button id="promptBtn">요청 문장 복사</button>
-      <button id="copyCodeBtn">코드 복사</button>
-      <button id="dlBtn">파일로 받기</button>
-      <button id="clearBtn">지우기</button>
+      <button id="shareBtn">공유 링크 복사</button>
     </div>
     <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
       placeholder="① AI에게 받은 답변을 복사하세요 (설명 글이 섞여 있어도 괜찮아요)&#10;② 위의 [붙여넣기] 버튼을 누르세요&#10;③ [▶ 실행]을 누르면 바로 실행됩니다"></textarea>
@@ -146,8 +148,9 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
       <li>빨간 오류가 뜨면 <b>[오류 복사]</b>를 눌러 AI에게 그대로 붙여넣으세요.</li>
       <li>오류는 없는데 이상하면, AI에게 <b>"무엇을 했더니 → 어떻게 됐는데 → 어떻게 되길 원해"</b> 순서로 말하세요.</li>
       <li>잘 돌아갈 때마다 <b>[저장]</b>해 두세요. 고치다 망가지면 <b>[불러오기]</b>로 돌아올 수 있어요.</li>
+      <li>완성하면 작품 이름을 쓰고 <b>[공유 링크 복사]</b>를 눌러 패들렛에 올리세요. 친구는 그 링크만 누르면 바로 실행됩니다.</li>
     </ol>
-    <p style="color:var(--sub);font-size:14px;margin:8px 0 0">저장칸은 이 태블릿의 이 브라우저에만 남습니다. 제출은 [코드 복사]로 해 주세요.</p>
+    <p style="color:var(--sub);font-size:14px;margin:8px 0 0">저장칸은 이 태블릿의 이 브라우저에만 남습니다.</p>
   </div>
   <div class="foot"><button id="helpClose" class="primary">닫기</button></div>
 </dialog>
@@ -363,22 +366,50 @@ var PROMPT_TAIL=
 '- 글자 입력칸이 필요하면 화면 위쪽에 둬.\n'+
 '- 설명은 짧게 하고, 코드는 생략 없이 전체를 한 번에 보여줘.';
 $('promptBtn').onclick=function(){ copyText('(여기에 만들고 싶은 것을 써요)'+PROMPT_TAIL,'요청 문장을 복사했어요. AI 입력창에 붙여넣고 맨 윗줄을 바꿔 쓰세요.'); };
-$('copyCodeBtn').onclick=function(){
-  if(!codeEl.value.trim()){ toast('복사할 코드가 없어요.'); return; }
-  copyText(codeEl.value,'코드를 복사했어요.');
-};
-$('dlBtn').onclick=function(){
-  if(!codeEl.value.trim()){ toast('받을 코드가 없어요.'); return; }
-  var name=($('name').value.trim()||'내작품').replace(/[\\/:*?"<>|]/g,'_');
-  var blob=new Blob([codeEl.value],{type:'text/html'}), a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download=name+'.html'; document.body.appendChild(a); a.click();
-  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
-};
 $('clearBtn').onclick=function(){
-  if(!codeEl.value.trim()) return;
-  if(!confirm('코드를 모두 지울까요?\n(저장칸에 저장한 것은 남아 있어요)')) return;
-  codeEl.value=''; saveDraft(); codeEl.focus();
+  if(!codeEl.value.trim() && !$('name').value) return;
+  if(!confirm('작성 중인 코드를 초기화할까요?\n(저장칸에 저장한 것은 남아 있어요)')) return;
+  codeEl.value=''; $('name').value=''; lastCode=''; frame.srcdoc=''; $('empty').hidden=false; clearErrors(); saveDraft();
 };
+
+/* ---------- 공유 링크: 코드를 압축해 주소 뒤(#)에 담음 ---------- */
+var LINK_LIMIT=20000;
+function b64url(bytes){ var s=''; for(var i=0;i<bytes.length;i+=0x8000) s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000)); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64url(str){ str=str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4) str+='='; var s=atob(str), b=new Uint8Array(s.length); for(var i=0;i<s.length;i++) b[i]=s.charCodeAt(i); return b; }
+function pack(text){
+  var stream=new Blob([text]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+  return new Response(stream).arrayBuffer().then(function(buf){ return b64url(new Uint8Array(buf)); });
+}
+function unpack(data){
+  var stream=new Blob([unb64url(data)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Response(stream).text();
+}
+$('shareBtn').onclick=function(){
+  var code=codeEl.value.trim();
+  if(!code){ toast('공유할 코드가 없어요.'); return; }
+  if(!$('name').value.trim()){ toast('작품 이름을 먼저 써 주세요.'); $('name').focus(); return; }
+  if(typeof CompressionStream==='undefined'){ copyText(code,'이 브라우저는 링크를 못 만들어요. 대신 코드를 복사했어요.'); return; }
+  pack(code).then(function(data){
+    var url=location.origin+location.pathname+'#n='+encodeURIComponent($('name').value.trim())+'&c='+data;
+    if(url.length>LINK_LIMIT){ copyText(code,'코드가 너무 길어 링크 대신 코드를 복사했어요.'); return; }
+    copyText(url,'공유 링크를 복사했어요. 패들렛 게시물에 붙여넣으세요.');
+  }).catch(function(){ copyText(code,'링크를 만들지 못해 코드를 복사했어요.'); });
+};
+function openShared(){
+  var h=location.hash.slice(1); if(!h) return;
+  var p={}; h.split('&').forEach(function(kv){ var i=kv.indexOf('='); if(i>0) p[kv.slice(0,i)]=kv.slice(i+1); });
+  if(!p.c) return;
+  var name=''; try{ name=decodeURIComponent(p.n||''); }catch(e){}
+  unpack(p.c).then(function(code){
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    if(codeEl.value.trim() && codeEl.value!==code &&
+       !confirm('친구 작품 "'+(name||'이름없음')+'"을(를) 열까요?\n지금 작성 중인 코드는 사라지니, 필요하면 [취소] 후 먼저 저장하세요.')) return;
+    codeEl.value=code; $('name').value=name; saveDraft();
+    toast('"'+(name||'공유 작품')+'"을(를) 열었어요.');
+    run();
+  }).catch(function(){ toast('링크가 잘렸거나 잘못됐어요. 링크 전체를 다시 복사해 주세요.'); });
+}
+window.addEventListener('hashchange',openShared);
 $('helpBtn').onclick=function(){ $('help').showModal(); };
 $('helpClose').onclick=function(){ $('help').close(); };
 
@@ -387,6 +418,7 @@ codeEl.value=sget('draft')||''; $('name').value=sget('name')||'';
 renderSlots();
 var wide=window.matchMedia('(min-width: 1000px)').matches;
 setView(sget('view')||(wide?'split':'code'));
+openShared();
 })();
 </script>
 </body>
