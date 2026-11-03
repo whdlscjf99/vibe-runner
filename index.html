@@ -94,6 +94,7 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
       <span class="sep"></span>
       <button id="pasteBtn" class="primary">붙여넣기</button>
       <button id="runBtn" class="go">▶ 실행</button>
+      <button id="copyCodeBtn">코드 복사</button>
       <button id="clearBtn">초기화</button>
     </div>
     <div class="tools">
@@ -103,6 +104,9 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
       <button id="loadBtn">불러오기</button>
       <span class="sep"></span>
       <button id="shareBtn">공유 링크 복사</button>
+      <button id="exportBtn">파일로 내보내기</button>
+      <button id="importBtn">파일 열기</button>
+      <input id="fileIn" type="file" accept=".html,.htm,.txt,text/html,text/plain" hidden>
     </div>
     <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
       placeholder="① AI에게 받은 답변을 복사하세요 (설명 글이 섞여 있어도 괜찮아요)&#10;② 위의 [붙여넣기] 버튼을 누르세요&#10;③ [▶ 실행]을 누르면 바로 실행됩니다"></textarea>
@@ -139,11 +143,12 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
       <li>AI 답변을 통째로 복사해서 <b>[붙여넣기]</b>를 누르세요. 설명 글은 실행기가 알아서 빼고 코드만 꺼냅니다.</li>
       <li><b>[▶ 실행]</b>을 누르세요. 게임은 <b>[전체화면]</b>으로 하면 더 넓게 볼 수 있어요.</li>
       <li>빨간 오류가 뜨면 <b>[오류 복사]</b>를 눌러 AI에게 그대로 붙여넣으세요.</li>
-      <li>오류는 없는데 이상하면, AI에게 <b>"무엇을 했더니 → 어떻게 됐는데 → 어떻게 되길 원해"</b> 순서로 말하세요.</li>
+      <li>오류는 없는데 이상하면, AI에게 <b>"무엇을 했더니 → 어떻게 됐는데 → 어떻게 되길 원해"</b> 순서로 말하세요. 이때 <b>[코드 복사]</b>로 지금 코드도 함께 붙여넣으면 AI가 더 정확히 고쳐요.</li>
       <li>잘 돌아갈 때마다 <b>[저장]</b>해 두세요. 고치다 망가지면 <b>[불러오기]</b>로 돌아올 수 있어요.</li>
       <li>완성하면 작품 이름을 쓰고 <b>[공유 링크 복사]</b>를 눌러 패들렛에 올리세요. 친구는 그 링크만 누르면 바로 실행됩니다.</li>
+      <li>중요한 작품은 <b>[파일로 내보내기]</b>로 다운로드 폴더에 따로 보관하세요. 다시 열 때는 <b>[파일 열기]</b>를 누르세요.</li>
     </ol>
-    <p style="color:var(--sub);font-size:14px;margin:8px 0 0">저장칸은 이 태블릿의 이 브라우저에만 남습니다.</p>
+    <p style="color:var(--sub);font-size:14px;margin:8px 0 0">저장칸은 이 태블릿의 이 브라우저에만 남고, 브라우저 데이터가 지워지면 함께 사라집니다.</p>
   </div>
   <div class="foot"><button id="helpClose" class="primary">닫기</button></div>
 </dialog>
@@ -328,13 +333,47 @@ $('saveBtn').onclick=function(){
   var i=$('slotSel').value, old=slotData(i);
   if(old && !confirm('저장칸 '+i+'에 있는 "'+(old.name||'이름없음')+'"을(를) 덮어쓸까요?')) return;
   var ok=sset('slot'+i, JSON.stringify({name:$('name').value.trim(), code:codeEl.value, t:Date.now()}));
-  renderSlots(); toast(ok?'저장칸 '+i+'에 저장했어요.':'이 브라우저에서는 저장할 수 없어요. [코드 복사]로 보관하세요.');
+  renderSlots(); toast(ok?'저장칸 '+i+'에 저장했어요.':'이 브라우저에서는 저장할 수 없어요. [파일로 내보내기]로 보관하세요.');
 };
 $('loadBtn').onclick=function(){
   var i=$('slotSel').value, d=slotData(i);
   if(!d){ toast('저장칸 '+i+'이(가) 비어 있어요.'); return; }
   if(codeEl.value.trim() && codeEl.value!==d.code && !confirm('지금 코드 대신 저장칸 '+i+'을(를) 불러올까요?\n(지금 코드는 사라져요)')) return;
   codeEl.value=d.code; $('name').value=d.name||''; saveDraft(); toast('불러왔어요. [▶ 실행]을 누르세요.');
+};
+
+/* ---------- 코드 복사 / 파일 내보내기·열기 ---------- */
+function safeName(){ return ($('name').value.trim()||'내작품').replace(/[\\\/:*?"<>|]/g,'_'); }
+function downloadCode(code, msg){
+  var name=safeName()+'.html';
+  try{
+    var url=URL.createObjectURL(new Blob([code],{type:'text/html;charset=utf-8'}));
+    var a=document.createElement('a'); a.href=url; a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); },1500);
+    toast(msg||('"'+name+'"을(를) 다운로드 폴더에 저장했어요.'));
+  }catch(e){ copyText(code,'파일로 저장하지 못해 코드를 복사했어요.'); }
+}
+$('copyCodeBtn').onclick=function(){
+  if(!codeEl.value.trim()){ toast('복사할 코드가 없어요.'); return; }
+  copyText(codeEl.value,'코드를 복사했어요.');
+};
+$('exportBtn').onclick=function(){
+  var code=codeEl.value.trim();
+  if(!code){ toast('내보낼 코드가 없어요.'); return; }
+  downloadCode(code);
+};
+$('importBtn').onclick=function(){ $('fileIn').click(); };
+$('fileIn').onchange=function(){
+  var f=this.files&&this.files[0]; this.value='';
+  if(!f) return;
+  f.text().then(function(t){
+    if(!t.trim()){ toast('빈 파일이에요.'); return; }
+    if(codeEl.value.trim() && codeEl.value!==t &&
+       !confirm('"'+f.name+'"을(를) 열까요?\n(지금 코드는 사라져요)')) return;
+    codeEl.value=t; $('name').value=f.name.replace(/\.(html?|txt)$/i,'').slice(0,30); saveDraft();
+    toast('파일을 열었어요. [▶ 실행]을 누르세요.');
+  }).catch(function(){ toast('파일을 읽지 못했어요.'); });
 };
 
 /* ---------- 기타 ---------- */
@@ -370,12 +409,12 @@ $('shareBtn').onclick=function(){
   var code=codeEl.value.trim();
   if(!code){ toast('공유할 코드가 없어요.'); return; }
   if(!$('name').value.trim()){ toast('작품 이름을 먼저 써 주세요.'); $('name').focus(); return; }
-  if(typeof CompressionStream==='undefined'){ copyText(code,'이 브라우저는 링크를 못 만들어요. 대신 코드를 복사했어요.'); return; }
+  if(typeof CompressionStream==='undefined'){ downloadCode(code,'이 브라우저는 링크를 못 만들어요. 대신 파일로 저장했어요. 패들렛에 파일을 올리세요.'); return; }
   pack(code).then(function(data){
     var url=location.origin+location.pathname+'#n='+encodeURIComponent($('name').value.trim())+'&c='+data;
-    if(url.length>LINK_LIMIT){ copyText(code,'코드가 너무 길어 링크 대신 코드를 복사했어요.'); return; }
+    if(url.length>LINK_LIMIT){ downloadCode(code,'코드가 길어 링크 대신 파일로 저장했어요. 패들렛에 파일을 올리세요.'); return; }
     copyText(url,'공유 링크를 복사했어요. 패들렛 게시물에 붙여넣으세요.');
-  }).catch(function(){ copyText(code,'링크를 만들지 못해 코드를 복사했어요.'); });
+  }).catch(function(){ downloadCode(code,'링크를 만들지 못해 파일로 저장했어요. 패들렛에 파일을 올리세요.'); });
 };
 function openShared(){
   var h=location.hash.slice(1); if(!h) return;
