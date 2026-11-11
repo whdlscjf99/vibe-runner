@@ -114,13 +114,13 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
         <h3>1. 바이브 코딩으로 코드 작성하기</h3>
         <div class="tools">
           <input id="name" type="text" placeholder="게임 이름" maxlength="30">
-          <input id="idea" type="text" placeholder="게임 설명 (예: 우주기지에서 산소·식량·전력을 관리하는 게임)" maxlength="200">
+          <input id="idea" type="text" placeholder="게임 설명 (선택. 예: 우주기지에서 산소·식량·전력을 관리하는 게임)" maxlength="200">
         </div>
         <div class="tools">
           <button id="aiGemini" class="ai">Gemini로 이동</button>
           <button id="aiChatgpt" class="ai">ChatGPT로 이동</button>
         </div>
-        <p class="hint">누르면 요청 문장이 복사된 뒤 AI 사이트가 열려요. AI 입력창을 길게 눌러 붙여넣기 하세요.</p>
+        <p class="hint">누르면 요청 문장이 복사된 뒤 AI 사이트가 열려요. AI 입력창을 길게 눌러 붙여넣기 하세요. 게임 설명을 비워 두면 붙여넣은 문장의 맨 윗줄에 직접 쓰세요.</p>
       </section>
 
       <section class="step">
@@ -198,7 +198,7 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
   <div class="dlg">
     <h2>사용법</h2>
     <ol>
-      <li><b>1단계</b> 게임 이름과 설명을 쓰고 <b>[Gemini로 이동]</b>(또는 ChatGPT)을 누르세요. 요청 문장이 복사되고 AI가 열려요. AI 입력창을 길게 눌러 <b>붙여넣기</b> 하세요.</li>
+      <li><b>1단계</b> 게임 이름(과 설명)을 쓰고 <b>[Gemini로 이동]</b>(또는 ChatGPT)을 누르세요. 요청 문장이 복사되고 AI가 열려요. AI 입력창을 길게 눌러 <b>붙여넣기</b> 하세요. 설명을 비웠다면 맨 윗줄에 만들고 싶은 게임을 쓰세요.</li>
       <li><b>2단계</b> AI 답변을 통째로 복사해서 <b>[붙여넣기]</b>를 누르세요. 설명 글은 실행기가 빼고 코드만 꺼냅니다. 파일로 받았다면 <b>[파일 열기]</b>를 누르세요.</li>
       <li><b>[▶ 실행]</b>을 누르세요. 게임은 <b>[전체화면]</b>으로 하면 더 넓게 볼 수 있어요.</li>
       <li>빨간 오류가 뜨면 <b>[오류 복사]</b>를 눌러 AI에게 그대로 붙여넣으세요.</li>
@@ -499,16 +499,19 @@ var RES_RULE=
 '- 자원이 바닥나거나 가득 차면 게임 상황이 바뀌어야 해(성공 또는 실패).\n'+
 '- 자원의 시작값, 늘어나는 양, 줄어드는 양은 코드 맨 위에 const로 한곳에 모아 줘. 나중에 숫자만 바꿔서 균형을 맞출 수 있게.';
 var USE_RESOURCE_RULE=true; /* 자원 활동이 아닌 수업에서 쓸 때는 false로 바꾸세요 */
+/* 이름·설명은 비워 둬도 됨. 비어 있으면 AI 입력창에서 맨 윗줄을 직접 쓰도록 안내 줄을 넣는다 */
+var ASK_LINE='(여기에 만들고 싶은 게임을 써요. 세로로 하는 게임이면 "세로 화면 게임"이라고 함께 써요)';
 function buildPrompt(){
-  var head='게임 이름: '+$('name').value.trim()+'\n게임 설명: '+$('idea').value.trim()+'\n위 게임을 만들어줘.';
+  var n=$('name').value.trim(), d=$('idea').value.trim(), head;
+  if(d) head=(n?'게임 이름: '+n+'\n':'')+'게임 설명: '+d+'\n위 게임을 만들어줘.';
+  else head=(n?'게임 이름: '+n+'\n':'')+ASK_LINE;
   return head+(USE_RESOURCE_RULE?RES_RULE:'')+PROMPT_TAIL;
 }
 function goAI(url){
-  if(!$('name').value.trim() || !$('idea').value.trim()){
-    toast('게임 이름과 게임 설명을 먼저 써 주세요.');
-    ($('name').value.trim()?$('idea'):$('name')).focus(); return;
-  }
-  copyText(buildPrompt(),'요청 문장을 복사했어요. AI 입력창을 길게 눌러 붙여넣기 하세요.',function(ok){ if(ok) openTab(url); });
+  var filled=!!$('idea').value.trim();
+  copyText(buildPrompt(),
+    filled?'요청 문장을 복사했어요. AI 입력창을 길게 눌러 붙여넣기 하세요.':'요청 문장을 복사했어요. AI 입력창에 붙여넣고 맨 윗줄에 만들고 싶은 게임을 쓰세요.',
+    function(ok){ if(ok) openTab(url); });
 }
 $('aiGemini').onclick=function(){ goAI('https://gemini.google.com/app'); };
 $('aiChatgpt').onclick=function(){ goAI('https://chatgpt.com/'); };
