@@ -31,6 +31,19 @@ button.prompt{background:#7a4fd6;color:#fff;border-color:#7a4fd6;font-weight:700
 button.go{background:var(--go);color:var(--go-text);border-color:var(--go);font-weight:700;padding:0 20px}
 select,input[type=text]{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:0 10px}
 
+#idea{flex:1;min-width:220px}
+.chk{display:flex;align-items:center;gap:6px;min-height:44px;font-size:14px;color:var(--sub);white-space:nowrap}
+.chk input{width:22px;height:22px;margin:0}
+button.ai{background:#0f766e;color:#fff;border-color:#0f766e;font-weight:700}
+#playBar{display:flex;gap:8px;align-items:center;padding:8px;background:#fff3c4;color:#3b3200;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#playBar span{margin-right:auto;font-weight:600}
+#playBar button{color:#1d2129}
+dialog .foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 22px;border-top:1px solid var(--line)}
+.warn{color:var(--sub);font-size:14px}
+#libList{list-style:none;padding:0;margin:12px 0 0}
+#libList li{display:flex;gap:8px;margin:8px 0}
+#libList .pl{flex:1;text-align:left;min-height:48px;overflow:hidden;text-overflow:ellipsis}
+#libList .pl small{color:var(--sub);margin-left:8px}
 .bar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .brand{font-weight:700;margin-right:auto}
 .tabs{display:flex;background:var(--chip);border-radius:12px;padding:3px}
@@ -84,14 +97,22 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
     <button data-view="split" role="tab">나란히</button>
     <button data-view="run" role="tab">실행 화면</button>
   </div>
+  <button id="libBtn" class="primary">친구 작품 보관함</button>
   <button id="helpBtn">사용법</button>
 </header>
 
 <main id="main" class="view-code">
   <section id="codePane" class="pane">
     <div class="tools">
-      <button id="promptBtn" class="prompt">요청 문장 복사</button>
-      <span class="sep"></span>
+      <input id="idea" type="text" placeholder="만들 게임 설명 (예: 우주기지에서 산소·식량·전력을 관리하는 게임)" maxlength="200">
+      <label class="chk"><input type="checkbox" id="resChk" checked> 자원 3종 조건 넣기</label>
+    </div>
+    <div class="tools">
+      <button id="aiGemini" class="ai">복사하고 Gemini 열기</button>
+      <button id="aiChatgpt" class="ai">복사하고 ChatGPT 열기</button>
+      <button id="promptBtn" class="prompt">요청 문장만 복사</button>
+    </div>
+    <div class="tools">
       <button id="pasteBtn" class="primary">붙여넣기</button>
       <button id="runBtn" class="go">▶ 실행</button>
       <button id="copyCodeBtn">코드 복사</button>
@@ -103,9 +124,10 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
       <button id="saveBtn">저장</button>
       <button id="loadBtn">불러오기</button>
       <span class="sep"></span>
+      <button id="padletBtn" class="primary">패들렛에 올리기</button>
       <button id="shareBtn">공유 링크 복사</button>
       <button id="exportBtn">파일로 내보내기</button>
-      <button id="importBtn">파일 열기</button>
+      <button id="importBtn">내 파일 열기</button>
       <input id="fileIn" type="file" accept=".html,.htm,.txt,text/html,text/plain" hidden>
     </div>
     <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
@@ -114,6 +136,11 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
   </section>
 
   <section id="runPane" class="pane">
+    <div id="playBar" hidden>
+      <span>친구 작품 · <b id="playName"></b></span>
+      <button id="playImport">코드로 가져와 고쳐 보기</button>
+      <button id="playClose">닫기</button>
+    </div>
     <div class="tools">
       <button id="rerunBtn" class="go">↻ 다시 실행</button>
       <button id="fsBtn" class="primary">전체화면</button>
@@ -139,18 +166,50 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
   <div class="dlg">
     <h2>사용법</h2>
     <ol>
-      <li><b>[요청 문장 복사]</b>를 누르고, AI에게 만들고 싶은 것을 쓴 뒤 그 아래에 붙여넣으세요. 태블릿에서 잘 돌아가게 하는 조건이 들어 있어요.</li>
+      <li>맨 위 칸에 <b>만들 게임 설명</b>을 쓰고 <b>[복사하고 Gemini 열기]</b>(또는 ChatGPT)를 누르세요. 요청 문장이 복사되고 AI가 열려요. AI 입력창을 길게 눌러 <b>붙여넣기</b> 하세요. 태블릿에서 잘 돌아가게 하는 조건과 자원 조건이 들어 있어요.</li>
       <li>AI 답변을 통째로 복사해서 <b>[붙여넣기]</b>를 누르세요. 설명 글은 실행기가 알아서 빼고 코드만 꺼냅니다.</li>
       <li><b>[▶ 실행]</b>을 누르세요. 게임은 <b>[전체화면]</b>으로 하면 더 넓게 볼 수 있어요.</li>
       <li>빨간 오류가 뜨면 <b>[오류 복사]</b>를 눌러 AI에게 그대로 붙여넣으세요.</li>
       <li>오류는 없는데 이상하면, AI에게 <b>"무엇을 했더니 → 어떻게 됐는데 → 어떻게 되길 원해"</b> 순서로 말하세요. 이때 <b>[코드 복사]</b>로 지금 코드도 함께 붙여넣으면 AI가 더 정확히 고쳐요.</li>
       <li>잘 돌아갈 때마다 <b>[저장]</b>해 두세요. 고치다 망가지면 <b>[불러오기]</b>로 돌아올 수 있어요.</li>
-      <li>완성하면 작품 이름을 쓰고 <b>[공유 링크 복사]</b>를 눌러 패들렛에 올리세요. 친구는 그 링크만 누르면 바로 실행됩니다.</li>
+      <li>완성하면 작품 이름을 쓰고 <b>[패들렛에 올리기]</b>를 누르세요. 파일이 저장되고, 안내대로 패들렛에 올리면 돼요.</li>
+      <li>친구 작품은 패들렛에서 파일을 받은 뒤 맨 위 <b>[친구 작품 보관함] → [파일에서 추가]</b>로 고르세요. 한 번 추가하면 다음부터는 이름만 눌러 실행해요. 배우고 싶으면 <b>[코드로 가져와 고쳐 보기]</b>를 누르세요.</li>
       <li>중요한 작품은 <b>[파일로 내보내기]</b>로 다운로드 폴더에 따로 보관하세요. 다시 열 때는 <b>[파일 열기]</b>를 누르세요.</li>
     </ol>
     <p style="color:var(--sub);font-size:14px;margin:8px 0 0">저장칸은 이 태블릿의 이 브라우저에만 남고, 브라우저 데이터가 지워지면 함께 사라집니다.</p>
   </div>
   <div class="foot"><button id="helpClose" class="primary">닫기</button></div>
+</dialog>
+
+<dialog id="padDlg">
+  <div class="dlg">
+    <h2>패들렛에 올리기</h2>
+    <p>작품 파일 <b id="padFile"></b>을(를) 다운로드 폴더에 저장했어요. 아래 순서로 올리세요.</p>
+    <ol>
+      <li>아래 <b>[패들렛 열기]</b>를 누르세요.</li>
+      <li>화면의 <b>＋</b>를 눌러 새 게시물을 만드세요.</li>
+      <li>파일 첨부 메뉴에서 <b>내 파일 → 다운로드</b> 폴더의 위 파일을 고르세요.</li>
+      <li>제목에 작품 이름을 쓰고, 본문에 <b>자원 3종과 게임 설명 한 줄</b>을 적은 뒤 게시하세요.</li>
+    </ol>
+    <p class="warn">파일이 안 보이면 [파일 다시 저장]을 누르고 다운로드 폴더를 확인하세요.</p>
+  </div>
+  <div class="foot">
+    <button id="padSaveAgain">파일 다시 저장</button>
+    <button id="padOpen" class="go">패들렛 열기</button>
+    <button id="padClose">닫기</button>
+  </div>
+</dialog>
+
+<dialog id="libDlg">
+  <div class="dlg">
+    <h2>친구 작품 보관함</h2>
+    <p>패들렛에서 받은 <b>.html 파일</b>을 [파일에서 추가]로 고르면 이 보관함에 저장돼요. 다음부터는 이름만 누르면 바로 실행돼요. 파일은 한 번에 여러 개도 고를 수 있어요.</p>
+    <button id="libAdd" class="primary">파일에서 추가</button>
+    <input id="libIn" type="file" accept=".html,.htm,text/html" multiple hidden>
+    <ul id="libList"></ul>
+    <p class="warn">보관함은 이 태블릿의 이 브라우저에만 저장돼요. 브라우저 데이터를 지우면 함께 사라져요.</p>
+  </div>
+  <div class="foot"><button id="libClose" class="primary">닫기</button></div>
 </dialog>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -168,25 +227,30 @@ function sset(k,v){ try{ localStorage.setItem(KEY+k,v); return true; }catch(e){ 
 
 /* ---------- 토스트 ---------- */
 var toastTimer;
-function toast(msg){ var t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove('show');},2200); }
+function toast(msg,ms){ var t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove('show');},ms||2200); }
 
 /* ---------- 클립보드 ---------- */
-function copyText(text, okMsg){
+function copyText(text, okMsg, cb){
+  function end(ok){ if(cb) cb(ok); }
   function fallback(){
     var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
     document.body.appendChild(ta); ta.select(); var ok=false; try{ ok=document.execCommand('copy'); }catch(e){}
-    document.body.removeChild(ta); toast(ok?okMsg:'복사하지 못했어요. 직접 선택해서 복사해 주세요.');
+    document.body.removeChild(ta); toast(ok?okMsg:'복사하지 못했어요. 직접 선택해서 복사해 주세요.'); end(ok);
   }
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(function(){ toast(okMsg); }, fallback);
+    navigator.clipboard.writeText(text).then(function(){ toast(okMsg); end(true); }, fallback);
   } else fallback();
+}
+function openTab(url){
+  var a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener';
+  document.body.appendChild(a); a.click(); a.remove();
 }
 
 /* ---------- 보기 전환 ---------- */
-function setView(v){
+function setView(v, nosave){
   main.className='view-'+v;
   document.querySelectorAll('.tabs button').forEach(function(b){ b.setAttribute('aria-selected', b.dataset.view===v); });
-  sset('view', v);
+  if(!nosave) sset('view', v);
 }
 document.querySelectorAll('.tabs button').forEach(function(b){ b.onclick=function(){ setView(b.dataset.view); }; });
 
@@ -237,7 +301,7 @@ function run(){
   if(!raw.trim()){ toast('코드를 먼저 붙여넣어 주세요.'); return; }
   var code=extract(raw);
   if(code!==raw.trim()){ codeEl.value=code; saveDraft(); toast('AI 답변에서 코드만 꺼냈어요.'); }
-  lastCode=code; clearErrors();
+  lastCode=code; clearErrors(); $('playBar').hidden=true;
   frame.srcdoc=withPrefix(code);
   $('empty').hidden=true;
   if(main.className==='view-code') setView('run');
@@ -351,7 +415,7 @@ function downloadCode(code, msg){
     var a=document.createElement('a'); a.href=url; a.download=name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); },1500);
-    toast(msg||('"'+name+'"을(를) 다운로드 폴더에 저장했어요.'));
+    toast(msg||('"'+name+'"을(를) 다운로드 폴더에 저장했어요.'),5000);
   }catch(e){ copyText(code,'파일로 저장하지 못해 코드를 복사했어요.'); }
 }
 $('copyCodeBtn').onclick=function(){
@@ -386,7 +450,28 @@ var PROMPT_TAIL=
 '- 글자 입력칸이 필요하면 화면 위쪽에 둬.\n'+
 '- "화면을 돌려주세요" 같은 회전 안내 화면은 넣지 마.\n'+
 '- 설명은 짧게 하고, 코드는 생략 없이 전체를 한 번에 보여줘.';
-$('promptBtn').onclick=function(){ copyText('(여기에 만들고 싶은 것을 써요. 세로로 하는 게임이면 "세로 화면 게임"이라고 함께 써요)'+PROMPT_TAIL,'요청 문장을 복사했어요. AI 입력창에 붙여넣고 맨 윗줄을 바꿔 쓰세요.'); };
+var RES_RULE=
+'\n\n[자원 조건]\n'+
+'- 게임 안에 "자원"이 정확히 3종류 있어야 해. 시간·돈·체력·식량처럼 줄거나 쌓이는 것이고, 1종류 이상은 행동하거나 시간이 지나면 늘어나고(생산), 1종류 이상은 줄어들어야 해(소비).\n'+
+'- 자원 이름과 현재 값이 화면에 항상 보여야 해.\n'+
+'- 자원이 바닥나거나 가득 차면 게임 상황이 바뀌어야 해(성공 또는 실패).\n'+
+'- 자원의 시작값, 늘어나는 양, 줄어드는 양은 코드 맨 위에 const로 한곳에 모아 줘. 나중에 숫자만 바꿔서 균형을 맞출 수 있게.';
+function buildPrompt(){
+  var idea=$('idea').value.trim();
+  var head=idea?('아래 게임을 만들어줘.\n'+idea):'(여기에 만들고 싶은 것을 써요. 세로로 하는 게임이면 "세로 화면 게임"이라고 함께 써요)';
+  return head+($('resChk').checked?RES_RULE:'')+PROMPT_TAIL;
+}
+function goAI(url){
+  if(!$('idea').value.trim()){ toast('만들 게임 설명을 먼저 써 주세요.'); $('idea').focus(); return; }
+  copyText(buildPrompt(),'요청 문장을 복사했어요. AI 입력창을 길게 눌러 붙여넣기 하세요.',function(ok){ if(ok) openTab(url); });
+}
+$('aiGemini').onclick=function(){ goAI('https://gemini.google.com/app'); };
+$('aiChatgpt').onclick=function(){ goAI('https://chatgpt.com/'); };
+$('promptBtn').onclick=function(){
+  copyText(buildPrompt(), $('idea').value.trim()?'요청 문장을 복사했어요. AI 입력창에 붙여넣으세요.':'요청 문장을 복사했어요. AI 입력창에 붙여넣고 맨 윗줄을 바꿔 쓰세요.');
+};
+$('idea').addEventListener('input',function(){ sset('idea',this.value); });
+$('resChk').addEventListener('change',function(){ sset('resChk',this.checked?'1':'0'); });
 $('clearBtn').onclick=function(){
   if(!codeEl.value.trim() && !$('name').value) return;
   if(!confirm('작성 중인 코드를 초기화할까요?\n(저장칸에 저장한 것은 남아 있어요)')) return;
@@ -405,17 +490,48 @@ function unpack(data){
   var stream=new Blob([unb64url(data)]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
   return new Response(stream).text();
 }
-$('shareBtn').onclick=function(){
-  var code=codeEl.value.trim();
-  if(!code){ toast('공유할 코드가 없어요.'); return; }
-  if(!$('name').value.trim()){ toast('작품 이름을 먼저 써 주세요.'); $('name').focus(); return; }
-  if(typeof CompressionStream==='undefined'){ downloadCode(code,'이 브라우저는 링크를 못 만들어요. 대신 파일로 저장했어요. 패들렛에 파일을 올리세요.'); return; }
-  pack(code).then(function(data){
+/* 공유 링크 만들기. 결과: {url} 또는 {file:true}(링크가 너무 길거나 못 만들 때) */
+function makeShare(code){
+  if(typeof CompressionStream==='undefined') return Promise.resolve({file:true});
+  return pack(code).then(function(data){
     var url=location.origin+location.pathname+'#n='+encodeURIComponent($('name').value.trim())+'&c='+data;
-    if(url.length>LINK_LIMIT){ downloadCode(code,'코드가 길어 링크 대신 파일로 저장했어요. 패들렛에 파일을 올리세요.'); return; }
-    copyText(url,'공유 링크를 복사했어요. 패들렛 게시물에 붙여넣으세요.');
-  }).catch(function(){ downloadCode(code,'링크를 만들지 못해 파일로 저장했어요. 패들렛에 파일을 올리세요.'); });
+    return url.length>LINK_LIMIT?{file:true}:{url:url};
+  }).catch(function(){ return {file:true}; });
+}
+function shareChecks(){
+  var code=codeEl.value.trim();
+  if(!code){ toast('공유할 코드가 없어요.'); return null; }
+  if(!$('name').value.trim()){ toast('작품 이름을 먼저 써 주세요.'); $('name').focus(); return null; }
+  return code;
+}
+$('shareBtn').onclick=function(){
+  var code=shareChecks(); if(!code) return;
+  makeShare(code).then(function(r){
+    if(r.file) downloadCode(code,'링크를 만들 수 없어 파일로 저장했어요. 패들렛에 파일을 올리세요.');
+    else copyText(r.url,'공유 링크를 복사했어요. 패들렛 게시물에 붙여넣으세요.');
+  });
 };
+
+/* ---------- 패들렛에 올리기 ---------- */
+var PADLET='https://padlet.com/whdlscjf99/2026-s025cgdy7i2q00tw06b1', padUrl='';
+$('padletBtn').onclick=function(){
+  var code=shareChecks(); if(!code) return;
+  $('padFile').textContent=safeName()+'.html';
+  downloadCode(code,'파일을 저장했어요.');
+  $('padDlg').showModal();
+};
+$('padSaveAgain').onclick=function(){ var c=codeEl.value.trim(); if(c) downloadCode(c,'파일을 다시 저장했어요. 다운로드 폴더를 확인하세요.'); };
+$('padOpen').onclick=function(){ $('padDlg').close(); openTab(PADLET); };
+$('padClose').onclick=function(){ $('padDlg').close(); };
+
+/* ---------- 친구 작품 열기(플레이 모드): 내 코드는 건드리지 않음 ---------- */
+var playCode='', playName='';
+function startPlay(code,name){
+  playCode=code; playName=name;
+  $('playName').textContent=name||'이름없음'; $('playBar').hidden=false;
+  lastCode=code; clearErrors(); frame.srcdoc=withPrefix(code); $('empty').hidden=true;
+  setView('run',true);
+}
 function openShared(){
   var h=location.hash.slice(1); if(!h) return;
   var p={}; h.split('&').forEach(function(kv){ var i=kv.indexOf('='); if(i>0) p[kv.slice(0,i)]=kv.slice(i+1); });
@@ -423,19 +539,87 @@ function openShared(){
   var name=''; try{ name=decodeURIComponent(p.n||''); }catch(e){}
   unpack(p.c).then(function(code){
     try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
-    if(codeEl.value.trim() && codeEl.value!==code &&
-       !confirm('친구 작품 "'+(name||'이름없음')+'"을(를) 열까요?\n지금 작성 중인 코드는 사라지니, 필요하면 [취소] 후 먼저 저장하세요.')) return;
-    codeEl.value=code; $('name').value=name; saveDraft();
-    toast('"'+(name||'공유 작품')+'"을(를) 열었어요.');
-    run();
+    startPlay(code,name);
   }).catch(function(){ toast('링크가 잘렸거나 잘못됐어요. 링크 전체를 다시 복사해 주세요.'); });
 }
+$('playImport').onclick=function(){
+  if(codeEl.value.trim() && codeEl.value!==playCode &&
+     !confirm('친구 작품을 내 코드 칸으로 가져올까요?\n지금 작성 중인 코드는 사라지니, 필요하면 [취소] 후 먼저 저장하세요.')) return;
+  codeEl.value=playCode; $('name').value=playName; saveDraft();
+  $('playBar').hidden=true; setView('code'); toast('가져왔어요. 고쳐서 [▶ 실행]을 눌러 보세요.');
+};
+$('playClose').onclick=function(){
+  $('playBar').hidden=true; lastCode=''; frame.srcdoc=''; $('empty').hidden=false; clearErrors();
+  setView(sget('view')||(wide?'split':'code'));
+};
+
+/* ---------- 친구 작품 보관함 (이 브라우저 안에 저장) ---------- */
+function libOp(mode,fn){
+  return new Promise(function(res,rej){
+    if(!window.indexedDB){ rej(new Error('noidb')); return; }
+    var r; try{ r=indexedDB.open('vibeRunnerLib',1); }catch(e){ rej(e); return; }
+    r.onupgradeneeded=function(){ r.result.createObjectStore('works',{keyPath:'id'}); };
+    r.onerror=function(){ rej(r.error); };
+    r.onsuccess=function(){
+      var db=r.result, tx, rq;
+      try{ tx=db.transaction('works',mode); rq=fn(tx.objectStore('works')); }catch(e){ rej(e); return; }
+      tx.oncomplete=function(){ db.close(); res(rq&&rq.result); };
+      tx.onerror=tx.onabort=function(){ db.close(); rej(tx.error); };
+    };
+  });
+}
+function hashCode(s){ var x=5381; for(var i=0;i<s.length;i++) x=((x<<5)+x+s.charCodeAt(i))|0; return (x>>>0).toString(36)+'-'+s.length.toString(36); }
+function libMsg(text){ var ul=$('libList'); ul.innerHTML=''; var li=document.createElement('li'); li.className='warn'; li.textContent=text; ul.appendChild(li); }
+function renderLib(){
+  libOp('readonly',function(s){ return s.getAll(); }).then(function(list){
+    var ul=$('libList'); ul.innerHTML='';
+    if(!list.length){ libMsg('아직 보관한 작품이 없어요. [파일에서 추가]로 받은 html 파일을 골라 보세요.'); return; }
+    list.sort(function(a,b){ return b.t-a.t; });
+    list.forEach(function(w){
+      var li=document.createElement('li');
+      var b=document.createElement('button'); b.className='pl'; b.textContent=w.name;
+      var sm=document.createElement('small'); sm.textContent=fmt(w.t); b.appendChild(sm);
+      b.onclick=function(){ $('libDlg').close(); startPlay(w.code,w.name); };
+      var d=document.createElement('button'); d.textContent='삭제';
+      d.onclick=function(){
+        if(!confirm('"'+w.name+'"을(를) 보관함에서 지울까요?')) return;
+        libOp('readwrite',function(s){ return s['delete'](w.id); }).then(renderLib,renderLib);
+      };
+      li.appendChild(b); li.appendChild(d); ul.appendChild(li);
+    });
+  }).catch(function(){ libMsg('이 브라우저에서는 보관함을 쓸 수 없어요. 파일을 고르면 바로 실행만 돼요.'); });
+}
+$('libBtn').onclick=function(){ renderLib(); $('libDlg').showModal(); };
+$('libClose').onclick=function(){ $('libDlg').close(); };
+$('libAdd').onclick=function(){ $('libIn').click(); };
+$('libIn').onchange=function(){
+  var files=Array.prototype.slice.call(this.files||[]); this.value='';
+  if(!files.length) return;
+  Promise.all(files.map(function(f){
+    return f.text().then(function(t){
+      return {name:(f.name.replace(/\.(html?|txt)$/i,'').replace(/\s*\(\d+\)$/,'').slice(0,30)||'이름없음'), code:t};
+    }).catch(function(){ return null; });
+  })).then(function(items){
+    items=items.filter(function(x){ return x && x.code.trim(); });
+    if(!items.length){ toast('열 수 있는 파일이 없어요. .html 파일을 고르세요.'); return; }
+    var saved=0;
+    return items.reduce(function(p,x){
+      return p.then(function(){ return libOp('readwrite',function(s){ return s.put({id:hashCode(x.code),name:x.name,code:x.code,t:Date.now()}); }).then(function(){ saved++; }); });
+    },Promise.resolve()).then(function(){
+      if(items.length===1){ $('libDlg').close(); startPlay(items[0].code,items[0].name); toast('보관함에 저장했어요.'); }
+      else { renderLib(); toast(saved+'개를 보관함에 추가했어요. 이름을 눌러 실행하세요.'); }
+    },function(){
+      $('libDlg').close(); startPlay(items[0].code,items[0].name); toast('보관함에 저장하지 못해 바로 실행만 해요.',4000);
+    });
+  });
+};
 window.addEventListener('hashchange',openShared);
 $('helpBtn').onclick=function(){ $('help').showModal(); };
 $('helpClose').onclick=function(){ $('help').close(); };
 
 /* ---------- 시작 ---------- */
 codeEl.value=sget('draft')||''; $('name').value=sget('name')||'';
+$('idea').value=sget('idea')||''; $('resChk').checked=sget('resChk')!=='0';
 renderSlots();
 var wide=window.matchMedia('(min-width: 1000px)').matches;
 setView(sget('view')||(wide?'split':'code'));
