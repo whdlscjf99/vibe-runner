@@ -40,7 +40,7 @@ button.ai{background:#0f766e;color:#fff;border-color:#0f766e;font-weight:700}
 #playBar button{color:#1d2129}
 dialog .foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 22px;border-top:1px solid var(--line)}
 .warn{color:var(--sub);font-size:14px}
-#libList{list-style:none;padding:0;margin:12px 0 0}
+#libList{list-style:none;padding:0;margin:12px 0 0;max-height:45vh;overflow:auto;-webkit-overflow-scrolling:touch}
 #libList li{display:flex;gap:8px;margin:8px 0}
 #libList .pl{flex:1;text-align:left;min-height:48px;overflow:hidden;text-overflow:ellipsis}
 #libList .pl small{color:var(--sub);margin-left:8px}
@@ -203,7 +203,7 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 <dialog id="libDlg">
   <div class="dlg">
     <h2>친구 작품 보관함</h2>
-    <p>패들렛에서 받은 <b>.html 파일</b>을 [파일에서 추가]로 고르면 이 보관함에 저장돼요. 다음부터는 이름만 누르면 바로 실행돼요. 파일은 한 번에 여러 개도 고를 수 있어요.</p>
+    <p>패들렛에서 받은 <b>.html 파일</b>을 [파일에서 추가]로 고르면 이 보관함에 저장돼요. 다음부터는 이름만 누르면 바로 실행돼요. 파일은 한 번에 여러 개도 고를 수 있어요. 선택창이 열리면 메뉴에서 <b>다운로드</b>를 눌러야 받은 파일이 보여요.</p>
     <button id="libAdd" class="primary">파일에서 추가</button>
     <input id="libIn" type="file" accept=".html,.htm,text/html" multiple hidden>
     <ul id="libList"></ul>
@@ -422,9 +422,19 @@ $('copyCodeBtn').onclick=function(){
   if(!codeEl.value.trim()){ toast('복사할 코드가 없어요.'); return; }
   copyText(codeEl.value,'코드를 복사했어요.');
 };
+function ensureName(){
+  var n=$('name').value.trim();
+  if(n) return true;
+  var v=prompt('작품 이름을 입력하세요. 파일 이름이 돼요.','');
+  if(v===null) return false;
+  v=v.trim();
+  if(!v){ toast('작품 이름이 있어야 저장할 수 있어요.'); return false; }
+  $('name').value=v.slice(0,30); saveDraft(); return true;
+}
 $('exportBtn').onclick=function(){
   var code=codeEl.value.trim();
   if(!code){ toast('내보낼 코드가 없어요.'); return; }
+  if(!ensureName()) return;
   downloadCode(code);
 };
 $('importBtn').onclick=function(){ $('fileIn').click(); };
