@@ -40,10 +40,17 @@ button.ai{background:#0f766e;color:#fff;border-color:#0f766e;font-weight:700}
 #playBar button{color:#1d2129}
 dialog .foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 22px;border-top:1px solid var(--line)}
 .warn{color:var(--sub);font-size:14px}
-#libList{list-style:none;padding:0;margin:12px 0 0;max-height:45vh;overflow:auto;-webkit-overflow-scrolling:touch}
-#libList li{display:flex;gap:8px;margin:8px 0}
-#libList .pl{flex:1;text-align:left;min-height:48px;overflow:hidden;text-overflow:ellipsis}
-#libList .pl small{color:var(--sub);margin-left:8px}
+#libList,#slotList{list-style:none;padding:0;margin:12px 0 0;max-height:45vh;overflow:auto;-webkit-overflow-scrolling:touch}
+#libList li,#slotList li{display:flex;gap:8px;margin:8px 0}
+#libList .pl,#slotList .pl{flex:1;text-align:left;min-height:48px;overflow:hidden;text-overflow:ellipsis}
+#libList .pl small,#slotList .pl small{color:var(--sub);margin-left:8px}
+.steps{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
+.step{border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0}
+.step h3{margin:0;padding:12px 12px 0;font-size:16px}
+.step .tools{border-bottom:0}
+.hint{margin:0;padding:0 12px 10px;color:var(--sub);font-size:13px;line-height:1.5}
+#code{flex:none;height:30vh;min-height:200px;display:block}
 .bar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .brand{font-weight:700;margin-right:auto}
 .tabs{display:flex;background:var(--chip);border-radius:12px;padding:3px}
@@ -55,7 +62,7 @@ main{flex:1;display:flex;gap:10px;padding:10px 16px 16px;min-height:0}
 main.view-code #runPane, main.view-run #codePane{display:none}
 .tools{display:flex;gap:8px;padding:8px;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
 .tools .sep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
-#name{width:140px}
+#name{width:180px}
 textarea{flex:1;width:100%;border:0;outline:0;resize:none;padding:12px;background:var(--code-bg);color:var(--text);font:14px/1.5 ui-monospace,"D2Coding",Consolas,monospace;tab-size:2}
 textarea::placeholder{color:var(--sub);font-family:system-ui,sans-serif;font-size:16px;line-height:1.7}
 .status{padding:6px 12px;font-size:13px;color:var(--sub);border-top:1px solid var(--line)}
@@ -97,42 +104,67 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
     <button data-view="split" role="tab">나란히</button>
     <button data-view="run" role="tab">실행 화면</button>
   </div>
-  <button id="libBtn" class="primary">친구 작품 보관함</button>
   <button id="helpBtn">사용법</button>
 </header>
 
 <main id="main" class="view-code">
   <section id="codePane" class="pane">
-    <div class="tools">
-      <input id="idea" type="text" placeholder="만들 게임 설명 (예: 우주기지에서 산소·식량·전력을 관리하는 게임)" maxlength="200">
-      <label class="chk"><input type="checkbox" id="resChk" checked> 자원 3종 조건 넣기</label>
+    <div class="steps">
+      <section class="step">
+        <h3>1. 바이브 코딩으로 코드 작성하기</h3>
+        <div class="tools">
+          <input id="name" type="text" placeholder="게임 이름" maxlength="30">
+          <input id="idea" type="text" placeholder="게임 설명 (예: 우주기지에서 산소·식량·전력을 관리하는 게임)" maxlength="200">
+        </div>
+        <div class="tools">
+          <button id="aiGemini" class="ai">Gemini로 이동</button>
+          <button id="aiChatgpt" class="ai">ChatGPT로 이동</button>
+        </div>
+        <p class="hint">누르면 요청 문장이 복사된 뒤 AI 사이트가 열려요. AI 입력창을 길게 눌러 붙여넣기 하세요.</p>
+      </section>
+
+      <section class="step">
+        <h3>2. 받은 코드나 파일 불러와서 실행하기</h3>
+        <div class="tools">
+          <button id="pasteBtn" class="primary">붙여넣기</button>
+          <button id="importBtn">파일 열기</button>
+          <button id="runBtn" class="go">▶ 실행</button>
+          <button id="copyCodeBtn">코드 복사</button>
+          <button id="clearBtn">코드 초기화</button>
+          <input id="fileIn" type="file" accept=".html,.htm,.txt,text/html,text/plain" hidden>
+        </div>
+        <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
+          placeholder="① AI 답변을 통째로 복사하세요 (설명 글이 섞여 있어도 괜찮아요)&#10;② [붙여넣기]를 누르세요 (파일이면 [파일 열기])&#10;③ [▶ 실행]을 누르면 바로 실행됩니다"></textarea>
+        <div class="status" id="status">작성 중인 코드는 이 태블릿에 자동으로 보관됩니다.</div>
+      </section>
+
+      <section class="step">
+        <h3>3. 작품 저장하기</h3>
+        <div class="tools">
+          <button id="saveBtn">저장</button>
+          <button id="loadBtn">불러오기</button>
+        </div>
+        <p class="hint">저장할 칸을 골라 저장하고, 불러올 때도 저장한 칸 중에서 골라요.</p>
+      </section>
+
+      <section class="step">
+        <h3>4. 작품 공유하기</h3>
+        <div class="tools">
+          <button id="exportBtn" class="primary">파일로 내보내기</button>
+          <button id="padletBtn" class="primary">패들렛으로 이동</button>
+          <button id="shareBtn" hidden>공유 링크 복사</button>
+        </div>
+        <p class="hint">① [파일로 내보내기]로 다운로드 폴더에 저장 → ② [패들렛으로 이동] → ＋ → 파일 첨부에서 <b>내 파일 → 다운로드</b> 폴더의 내 파일을 고르세요.</p>
+      </section>
+
+      <section class="step">
+        <h3>5. 친구 작품 해보기</h3>
+        <div class="tools">
+          <button id="libBtn" class="primary">친구 작품 보관함</button>
+        </div>
+        <p class="hint">패들렛에서 받은 친구 파일을 보관함에 추가하면, 다음부터는 이름만 눌러 바로 실행할 수 있어요.</p>
+      </section>
     </div>
-    <div class="tools">
-      <button id="aiGemini" class="ai">복사하고 Gemini 열기</button>
-      <button id="aiChatgpt" class="ai">복사하고 ChatGPT 열기</button>
-      <button id="promptBtn" class="prompt">요청 문장만 복사</button>
-    </div>
-    <div class="tools">
-      <button id="pasteBtn" class="primary">붙여넣기</button>
-      <button id="runBtn" class="go">▶ 실행</button>
-      <button id="copyCodeBtn">코드 복사</button>
-      <button id="clearBtn">초기화</button>
-    </div>
-    <div class="tools">
-      <input id="name" type="text" placeholder="작품 이름" maxlength="30">
-      <select id="slotSel" aria-label="저장칸"></select>
-      <button id="saveBtn">저장</button>
-      <button id="loadBtn">불러오기</button>
-      <span class="sep"></span>
-      <button id="padletBtn" class="primary">패들렛에 올리기</button>
-      <button id="shareBtn">공유 링크 복사</button>
-      <button id="exportBtn">파일로 내보내기</button>
-      <button id="importBtn">내 파일 열기</button>
-      <input id="fileIn" type="file" accept=".html,.htm,.txt,text/html,text/plain" hidden>
-    </div>
-    <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"
-      placeholder="① AI에게 받은 답변을 복사하세요 (설명 글이 섞여 있어도 괜찮아요)&#10;② 위의 [붙여넣기] 버튼을 누르세요&#10;③ [▶ 실행]을 누르면 바로 실행됩니다"></textarea>
-    <div class="status" id="status">작성 중인 코드는 이 태블릿에 자동으로 보관됩니다.</div>
   </section>
 
   <section id="runPane" class="pane">
@@ -166,38 +198,26 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
   <div class="dlg">
     <h2>사용법</h2>
     <ol>
-      <li>맨 위 칸에 <b>만들 게임 설명</b>을 쓰고 <b>[복사하고 Gemini 열기]</b>(또는 ChatGPT)를 누르세요. 요청 문장이 복사되고 AI가 열려요. AI 입력창을 길게 눌러 <b>붙여넣기</b> 하세요. 태블릿에서 잘 돌아가게 하는 조건과 자원 조건이 들어 있어요.</li>
-      <li>AI 답변을 통째로 복사해서 <b>[붙여넣기]</b>를 누르세요. 설명 글은 실행기가 알아서 빼고 코드만 꺼냅니다.</li>
+      <li><b>1단계</b> 게임 이름과 설명을 쓰고 <b>[Gemini로 이동]</b>(또는 ChatGPT)을 누르세요. 요청 문장이 복사되고 AI가 열려요. AI 입력창을 길게 눌러 <b>붙여넣기</b> 하세요.</li>
+      <li><b>2단계</b> AI 답변을 통째로 복사해서 <b>[붙여넣기]</b>를 누르세요. 설명 글은 실행기가 빼고 코드만 꺼냅니다. 파일로 받았다면 <b>[파일 열기]</b>를 누르세요.</li>
       <li><b>[▶ 실행]</b>을 누르세요. 게임은 <b>[전체화면]</b>으로 하면 더 넓게 볼 수 있어요.</li>
       <li>빨간 오류가 뜨면 <b>[오류 복사]</b>를 눌러 AI에게 그대로 붙여넣으세요.</li>
       <li>오류는 없는데 이상하면, AI에게 <b>"무엇을 했더니 → 어떻게 됐는데 → 어떻게 되길 원해"</b> 순서로 말하세요. 이때 <b>[코드 복사]</b>로 지금 코드도 함께 붙여넣으면 AI가 더 정확히 고쳐요.</li>
-      <li>잘 돌아갈 때마다 <b>[저장]</b>해 두세요. 고치다 망가지면 <b>[불러오기]</b>로 돌아올 수 있어요.</li>
-      <li>완성하면 작품 이름을 쓰고 <b>[패들렛에 올리기]</b>를 누르세요. 파일이 저장되고, 안내대로 패들렛에 올리면 돼요.</li>
-      <li>친구 작품은 패들렛에서 파일을 받은 뒤 맨 위 <b>[친구 작품 보관함] → [파일에서 추가]</b>로 고르세요. 한 번 추가하면 다음부터는 이름만 눌러 실행해요. 배우고 싶으면 <b>[코드로 가져와 고쳐 보기]</b>를 누르세요.</li>
-      <li>중요한 작품은 <b>[파일로 내보내기]</b>로 다운로드 폴더에 따로 보관하세요. 다시 열 때는 <b>[파일 열기]</b>를 누르세요.</li>
+      <li><b>3단계</b> 잘 돌아갈 때마다 <b>[저장]</b>해 두세요. 고치다 망가지면 <b>[불러오기]</b>로 돌아올 수 있어요.</li>
+      <li><b>4단계</b> 완성하면 <b>[파일로 내보내기]</b>로 파일을 저장하고, <b>[패들렛으로 이동]</b>에서 그 파일을 올리세요.</li>
+      <li><b>5단계</b> 친구 작품은 패들렛에서 파일을 받은 뒤 <b>[친구 작품 보관함] → [파일에서 추가]</b>로 고르세요. 한 번 추가하면 다음부터는 이름만 눌러 실행해요. 배우고 싶으면 <b>[코드로 가져와 고쳐 보기]</b>를 누르세요.</li>
     </ol>
     <p style="color:var(--sub);font-size:14px;margin:8px 0 0">저장칸은 이 태블릿의 이 브라우저에만 남고, 브라우저 데이터가 지워지면 함께 사라집니다.</p>
   </div>
   <div class="foot"><button id="helpClose" class="primary">닫기</button></div>
 </dialog>
 
-<dialog id="padDlg">
+<dialog id="slotDlg">
   <div class="dlg">
-    <h2>패들렛에 올리기</h2>
-    <p>작품 파일 <b id="padFile"></b>을(를) 다운로드 폴더에 저장했어요. 아래 순서로 올리세요.</p>
-    <ol>
-      <li>아래 <b>[패들렛 열기]</b>를 누르세요.</li>
-      <li>화면의 <b>＋</b>를 눌러 새 게시물을 만드세요.</li>
-      <li>파일 첨부 메뉴에서 <b>내 파일 → 다운로드</b> 폴더의 위 파일을 고르세요.</li>
-      <li>제목에 작품 이름을 쓰고, 본문에 <b>자원 3종과 게임 설명 한 줄</b>을 적은 뒤 게시하세요.</li>
-    </ol>
-    <p class="warn">파일이 안 보이면 [파일 다시 저장]을 누르고 다운로드 폴더를 확인하세요.</p>
+    <h2 id="slotTitle"></h2>
+    <ul id="slotList"></ul>
   </div>
-  <div class="foot">
-    <button id="padSaveAgain">파일 다시 저장</button>
-    <button id="padOpen" class="go">패들렛 열기</button>
-    <button id="padClose">닫기</button>
-  </div>
+  <div class="foot"><button id="slotClose">닫기</button></div>
 </dialog>
 
 <dialog id="libDlg">
@@ -383,28 +403,39 @@ $('name').addEventListener('input',saveDraft);
 /* ---------- 저장칸 ---------- */
 function slotData(i){ try{ return JSON.parse(sget('slot'+i)||'null'); }catch(e){ return null; } }
 function fmt(t){ var d=new Date(t); return (d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
-function renderSlots(){
-  var sel=$('slotSel'), cur=sel.value||'1'; sel.innerHTML='';
-  for(var i=1;i<=SLOTS;i++){
-    var d=slotData(i), o=document.createElement('option'); o.value=String(i);
-    o.textContent='저장칸 '+i+(d?' · '+(d.name||'이름없음')+' ('+fmt(d.t)+')':' · 비어 있음');
-    sel.appendChild(o);
-  }
-  sel.value=cur;
-}
-$('saveBtn').onclick=function(){
-  if(!codeEl.value.trim()){ toast('저장할 코드가 없어요.'); return; }
-  var i=$('slotSel').value, old=slotData(i);
+function doSave(i){
+  var old=slotData(i);
   if(old && !confirm('저장칸 '+i+'에 있는 "'+(old.name||'이름없음')+'"을(를) 덮어쓸까요?')) return;
   var ok=sset('slot'+i, JSON.stringify({name:$('name').value.trim(), code:codeEl.value, t:Date.now()}));
-  renderSlots(); toast(ok?'저장칸 '+i+'에 저장했어요.':'이 브라우저에서는 저장할 수 없어요. [파일로 내보내기]로 보관하세요.');
-};
-$('loadBtn').onclick=function(){
-  var i=$('slotSel').value, d=slotData(i);
-  if(!d){ toast('저장칸 '+i+'이(가) 비어 있어요.'); return; }
+  toast(ok?'저장칸 '+i+'에 저장했어요.':'이 브라우저에서는 저장할 수 없어요. [파일로 내보내기]로 보관하세요.');
+}
+function doLoad(i){
+  var d=slotData(i); if(!d) return;
   if(codeEl.value.trim() && codeEl.value!==d.code && !confirm('지금 코드 대신 저장칸 '+i+'을(를) 불러올까요?\n(지금 코드는 사라져요)')) return;
   codeEl.value=d.code; $('name').value=d.name||''; saveDraft(); toast('불러왔어요. [▶ 실행]을 누르세요.');
-};
+}
+function openSlots(mode){
+  var save=mode==='save';
+  if(save){
+    if(!codeEl.value.trim()){ toast('저장할 코드가 없어요.'); return; }
+    if(!ensureName()) return;
+  }
+  $('slotTitle').textContent=save?'어느 저장칸에 저장할까요?':'어느 저장칸을 불러올까요?';
+  var ul=$('slotList'); ul.innerHTML=''; var shown=0;
+  for(var i=1;i<=SLOTS;i++){ (function(n){
+    var d=slotData(n); if(!save && !d) return;
+    var li=document.createElement('li'), b=document.createElement('button'); b.className='pl';
+    b.textContent='저장칸 '+n+' · '+(d?(d.name||'이름없음'):'비어 있음');
+    if(d){ var sm=document.createElement('small'); sm.textContent=fmt(d.t); b.appendChild(sm); }
+    b.onclick=function(){ $('slotDlg').close(); if(save) doSave(n); else doLoad(n); };
+    li.appendChild(b); ul.appendChild(li); shown++;
+  })(i); }
+  if(!shown){ var e=document.createElement('li'); e.className='warn'; e.textContent='저장한 작품이 아직 없어요. [저장]으로 먼저 저장하세요.'; ul.appendChild(e); }
+  $('slotDlg').showModal();
+}
+$('saveBtn').onclick=function(){ openSlots('save'); };
+$('loadBtn').onclick=function(){ openSlots('load'); };
+$('slotClose').onclick=function(){ $('slotDlg').close(); };
 
 /* ---------- 코드 복사 / 파일 내보내기·열기 ---------- */
 function safeName(){ return ($('name').value.trim()||'내작품').replace(/[\\\/:*?"<>|]/g,'_'); }
@@ -422,6 +453,7 @@ $('copyCodeBtn').onclick=function(){
   if(!codeEl.value.trim()){ toast('복사할 코드가 없어요.'); return; }
   copyText(codeEl.value,'코드를 복사했어요.');
 };
+var exported=false;
 function ensureName(){
   var n=$('name').value.trim();
   if(n) return true;
@@ -435,7 +467,7 @@ $('exportBtn').onclick=function(){
   var code=codeEl.value.trim();
   if(!code){ toast('내보낼 코드가 없어요.'); return; }
   if(!ensureName()) return;
-  downloadCode(code);
+  downloadCode(code); exported=true;
 };
 $('importBtn').onclick=function(){ $('fileIn').click(); };
 $('fileIn').onchange=function(){
@@ -466,26 +498,25 @@ var RES_RULE=
 '- 자원 이름과 현재 값이 화면에 항상 보여야 해.\n'+
 '- 자원이 바닥나거나 가득 차면 게임 상황이 바뀌어야 해(성공 또는 실패).\n'+
 '- 자원의 시작값, 늘어나는 양, 줄어드는 양은 코드 맨 위에 const로 한곳에 모아 줘. 나중에 숫자만 바꿔서 균형을 맞출 수 있게.';
+var USE_RESOURCE_RULE=true; /* 자원 활동이 아닌 수업에서 쓸 때는 false로 바꾸세요 */
 function buildPrompt(){
-  var idea=$('idea').value.trim();
-  var head=idea?('아래 게임을 만들어줘.\n'+idea):'(여기에 만들고 싶은 것을 써요. 세로로 하는 게임이면 "세로 화면 게임"이라고 함께 써요)';
-  return head+($('resChk').checked?RES_RULE:'')+PROMPT_TAIL;
+  var head='게임 이름: '+$('name').value.trim()+'\n게임 설명: '+$('idea').value.trim()+'\n위 게임을 만들어줘.';
+  return head+(USE_RESOURCE_RULE?RES_RULE:'')+PROMPT_TAIL;
 }
 function goAI(url){
-  if(!$('idea').value.trim()){ toast('만들 게임 설명을 먼저 써 주세요.'); $('idea').focus(); return; }
+  if(!$('name').value.trim() || !$('idea').value.trim()){
+    toast('게임 이름과 게임 설명을 먼저 써 주세요.');
+    ($('name').value.trim()?$('idea'):$('name')).focus(); return;
+  }
   copyText(buildPrompt(),'요청 문장을 복사했어요. AI 입력창을 길게 눌러 붙여넣기 하세요.',function(ok){ if(ok) openTab(url); });
 }
 $('aiGemini').onclick=function(){ goAI('https://gemini.google.com/app'); };
 $('aiChatgpt').onclick=function(){ goAI('https://chatgpt.com/'); };
-$('promptBtn').onclick=function(){
-  copyText(buildPrompt(), $('idea').value.trim()?'요청 문장을 복사했어요. AI 입력창에 붙여넣으세요.':'요청 문장을 복사했어요. AI 입력창에 붙여넣고 맨 윗줄을 바꿔 쓰세요.');
-};
 $('idea').addEventListener('input',function(){ sset('idea',this.value); });
-$('resChk').addEventListener('change',function(){ sset('resChk',this.checked?'1':'0'); });
 $('clearBtn').onclick=function(){
-  if(!codeEl.value.trim() && !$('name').value) return;
-  if(!confirm('작성 중인 코드를 초기화할까요?\n(저장칸에 저장한 것은 남아 있어요)')) return;
-  codeEl.value=''; $('name').value=''; lastCode=''; frame.srcdoc=''; $('empty').hidden=false; clearErrors(); saveDraft();
+  if(!codeEl.value.trim()) return;
+  if(!confirm('코드를 초기화할까요?\n(게임 이름·설명과 저장칸에 저장한 것은 남아 있어요)')) return;
+  codeEl.value=''; lastCode=''; frame.srcdoc=''; $('empty').hidden=false; clearErrors(); saveDraft();
 };
 
 /* ---------- 공유 링크: 코드를 압축해 주소 뒤(#)에 담음 ---------- */
@@ -525,14 +556,9 @@ $('shareBtn').onclick=function(){
 /* ---------- 패들렛에 올리기 ---------- */
 var PADLET='https://padlet.com/whdlscjf99/2026-s025cgdy7i2q00tw06b1', padUrl='';
 $('padletBtn').onclick=function(){
-  var code=shareChecks(); if(!code) return;
-  $('padFile').textContent=safeName()+'.html';
-  downloadCode(code,'파일을 저장했어요.');
-  $('padDlg').showModal();
+  if(!exported && !confirm('아직 [파일로 내보내기]를 하지 않았어요.\n파일이 있어야 패들렛에 올릴 수 있어요.\n그래도 패들렛으로 이동할까요?')) return;
+  openTab(PADLET);
 };
-$('padSaveAgain').onclick=function(){ var c=codeEl.value.trim(); if(c) downloadCode(c,'파일을 다시 저장했어요. 다운로드 폴더를 확인하세요.'); };
-$('padOpen').onclick=function(){ $('padDlg').close(); openTab(PADLET); };
-$('padClose').onclick=function(){ $('padDlg').close(); };
 
 /* ---------- 친구 작품 열기(플레이 모드): 내 코드는 건드리지 않음 ---------- */
 var playCode='', playName='';
@@ -556,7 +582,8 @@ $('playImport').onclick=function(){
   if(codeEl.value.trim() && codeEl.value!==playCode &&
      !confirm('친구 작품을 내 코드 칸으로 가져올까요?\n지금 작성 중인 코드는 사라지니, 필요하면 [취소] 후 먼저 저장하세요.')) return;
   codeEl.value=playCode; $('name').value=playName; saveDraft();
-  $('playBar').hidden=true; setView('code'); toast('가져왔어요. 고쳐서 [▶ 실행]을 눌러 보세요.');
+  $('playBar').hidden=true; setView('code'); try{ codeEl.scrollIntoView({block:'nearest'}); }catch(e){}
+  toast('가져왔어요. 고쳐서 [▶ 실행]을 눌러 보세요.');
 };
 $('playClose').onclick=function(){
   $('playBar').hidden=true; lastCode=''; frame.srcdoc=''; $('empty').hidden=false; clearErrors();
@@ -629,8 +656,7 @@ $('helpClose').onclick=function(){ $('help').close(); };
 
 /* ---------- 시작 ---------- */
 codeEl.value=sget('draft')||''; $('name').value=sget('name')||'';
-$('idea').value=sget('idea')||''; $('resChk').checked=sget('resChk')!=='0';
-renderSlots();
+$('idea').value=sget('idea')||'';
 var wide=window.matchMedia('(min-width: 1000px)').matches;
 setView(sget('view')||(wide?'split':'code'));
 openShared();
